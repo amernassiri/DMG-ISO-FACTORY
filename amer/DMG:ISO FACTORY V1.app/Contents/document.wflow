@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AMApplicationBuild</key>
+	<string>521.1</string>
+	<key>AMApplicationVersion</key>
+	<string>2.10</string>
+	<key>AMDocumentVersion</key>
+	<string>2</string>
+	<key>actions</key>
+	<array>
+		<dict>
+			<key>action</key>
+			<dict>
+				<key>AMAccepts</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Optional</key>
+					<true/>
+					<key>Types</key>
+					<array>
+						<string>com.apple.applescript.object</string>
+					</array>
+				</dict>
+				<key>AMActionVersion</key>
+				<string>1.0.2</string>
+				<key>AMApplication</key>
+				<array>
+					<string>Automator</string>
+				</array>
+				<key>AMParameterProperties</key>
+				<dict>
+					<key>source</key>
+					<dict/>
+				</dict>
+				<key>AMProvides</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Types</key>
+					<array>
+						<string>com.apple.applescript.object</string>
+					</array>
+				</dict>
+				<key>ActionBundlePath</key>
+				<string>/System/Library/Automator/Run AppleScript.action</string>
+				<key>ActionName</key>
+				<string>Run AppleScript</string>
+				<key>ActionParameters</key>
+				<dict>
+					<key>source</key>
+					<string>property dialogTitle : "DMG/ISO Factory"-- Main menu displayset menuOptions to {"Convert DMG to ISO", "Convert ISO to DMG", "Create ISO from Folder/File", "Create DMG from Folder/File", "Extract (ISO/DMG) to folder", "Edit ISO or DMG", "Exit"}repeat	set userChoice to choose from list menuOptions with prompt "Choose an option:" default items {"Exit"} without multiple selections allowed		if userChoice is false then		exit repeat	else if userChoice contains "Convert DMG to ISO" then		ConvertDMGToISO()	else if userChoice contains "Convert ISO to DMG" then		ConvertISOToDMG()	else if userChoice contains "Create ISO from Folder/File" then		CreateISOFromFolder()	else if userChoice contains "Create DMG from Folder/File" then		CreateDMGFromContent()	else if userChoice contains "Extract (ISO/DMG) to folder" then		ExtractISOToFolder()	else if userChoice contains "Edit ISO or DMG" then		EditISOorDMG()	else if userChoice contains "Exit" then		exit repeat	end ifend repeat-- Convert DMG to ISOon ConvertDMGToISO()	try		set sourceFile to POSIX path of (choose file with prompt "Select a DMG file to convert:" of type {"DMG"})				if sourceFile does not end with ".dmg" then error "A DMG file must be selected."				set defaultISOName to "output.iso"		set destinationISO to POSIX path of (choose file name with prompt "Save ISO as:" default name defaultISOName)				if destinationISO does not end with ".iso" then set destinationISO to destinationISO &amp; ".iso"				set tempDestinationISO to destinationISO &amp; "_temp"				display alert dialogTitle message "The operation is starting. This process may take a while. Please be patient and wait for the finished message. NOTE: ONCE THE TEMPORARY FILE CHANGES ITS NAME TO THE FINAL CHOSEN NAME, THE OPERATION WILL BE COMPLETE." buttons {"Cancel", "Continue"} default button "Continue"		if button returned of result is "Cancel" then error "User cancelled."				do shell script "hdiutil convert " &amp; quoted form of sourceFile &amp; " -format UDTO -o " &amp; quoted form of tempDestinationISO		do shell script "mv " &amp; quoted form of (tempDestinationISO &amp; ".cdr") &amp; " " &amp; quoted form of destinationISO				-- Updated dialog		set userResponse to display dialog "DMG converted to ISO successfully." buttons {"OK", "Open Folder"} default button "OK"		if button returned of userResponse is "Open Folder" then			set destinationFolder to text 1 thru ((length of destinationISO) - (length of (do shell script "basename " &amp; quoted form of destinationISO))) of destinationISO			do shell script "open " &amp; quoted form of destinationFolder		end if			on error errorMessage		if errorMessage is "User cancelled." then			return		else			display dialog "An error occurred: " &amp; errorMessage buttons {"OK"} default button "OK"		end if	end tryend ConvertDMGToISO-- Convert ISO to DMGon ConvertISOToDMG()	try		set sourceFile to POSIX path of (choose file with prompt "Select an ISO file to convert:" of type {"ISO"})				if sourceFile does not end with ".iso" then error "An ISO file must be selected."				set defaultDMGName to "output.dmg"		set destinationDMG to POSIX path of (choose file name with prompt "Save DMG as:" default name defaultDMGName)				if destinationDMG does not end with ".dmg" then set destinationDMG to destinationDMG &amp; ".dmg"				set tempDestinationDMG to destinationDMG &amp; "_temp"				display alert dialogTitle message "The operation is starting. This process may take a while. Please be patient and wait for the finished message. NOTE: ONCE THE TEMPORARY FILE CHANGES ITS NAME TO THE FINAL CHOSEN NAME, THE OPERATION WILL BE COMPLETE." buttons {"Cancel", "Continue"} default button "Continue"		if button returned of result is "Cancel" then error "User cancelled."				do shell script "hdiutil convert " &amp; quoted form of sourceFile &amp; " -format UDRW -o " &amp; quoted form of tempDestinationDMG		do shell script "mv " &amp; quoted form of (tempDestinationDMG &amp; ".dmg") &amp; " " &amp; quoted form of destinationDMG		display dialog "ISO converted to DMG successfully." buttons {"OK"} default button "OK"			on error errorMessage		if errorMessage is "User cancelled." then			return		else			display dialog "An error occurred: " &amp; errorMessage buttons {"OK"} default button "OK"		end if	end tryend ConvertISOToDMGon CreateISOFromFolder()	try		-- Prompt user to choose a file or folder		display dialog "Do you want to create an ISO from a File or Folder?" buttons {"File", "Folder", "Cancel"} default button "Folder"		set choice to button returned of result				if choice is "Folder" then			set sourceItem to POSIX path of (choose folder with prompt "Please select a folder:")		else if choice is "File" then			set sourceItem to POSIX path of (choose file with prompt "Please select a file:")		else			error "User cancelled."		end if				-- Determine destination ISO name		set defaultISOName to "output.iso"		set destinationISO to POSIX path of (choose file name with prompt "Save ISO as:" default name defaultISOName)				-- Ensure the destination ISO name ends with ".iso"		if destinationISO does not end with ".iso" then set destinationISO to destinationISO &amp; ".iso"				set tempDestinationISO to destinationISO &amp; "_temp"				-- Alert the user of the operation start		display alert "DMG/ISO Factory" message "The operation is starting. This process may take a while. Please be patient and wait for the finished message. NOTE: ONCE THE TEMPORARY FILE CHANGES ITS NAME TO THE FINAL CHOSEN NAME, THE OPERATION WILL BE COMPLETE." buttons {"Cancel", "Continue"} default button "Continue"		if button returned of result is "Cancel" then error "User cancelled."				-- Convert Folder/File to ISO using hdiutil		do shell script "hdiutil makehybrid -o " &amp; quoted form of tempDestinationISO &amp; " " &amp; quoted form of sourceItem &amp; " -iso -joliet"		do shell script "mv " &amp; quoted form of (tempDestinationISO &amp; ".iso") &amp; " " &amp; quoted form of destinationISO		display dialog "Folder/File converted to ISO successfully." buttons {"OK"} default button "OK"			on error errorMessage		if errorMessage is "User cancelled." then			return		else			display dialog "An error occurred: " &amp; errorMessage buttons {"OK"} default button "OK"		end if	end tryend CreateISOFromFolder-- Create DMG from Folder/Fileon CreateDMGFromContent()	set contentChoices to {"File", "Folder"}	set userChoice to choose from list contentChoices with prompt "Do you want to create a DMG from a File or Folder?" default items {"Folder"} with title dialogTitle		if userChoice is false then		return -- This takes you back to the main menu.	end if		set userChoice to item 1 of userChoice		try		if userChoice is "File" then			set sourcePath to POSIX path of (choose file with prompt "Select a file:")		else			set sourcePath to POSIX path of (choose folder with prompt "Select a folder:")		end if	on error		return -- If the user clicks "Cancel" in the dialog, it takes you back to the main menu.	end try		set defaultDMGName to "output.dmg"		try		set destinationDMG to POSIX path of (choose file name with prompt "Save DMG as:" default name defaultDMGName)	on error		return -- If the user clicks "Cancel" in the dialog, it takes you back to the main menu.	end try		set tempDestinationDMG to destinationDMG &amp; "_temp"		if destinationDMG does not end with ".dmg" then		set destinationDMG to destinationDMG &amp; ".dmg"	end if		display alert dialogTitle message "The operation is starting. This process may take a while. Please be patient and wait for the finished message. NOTE: ONCE THE TEMPORARY FILE CHANGES ITS NAME TO THE FINAL CHOSEN NAME, THE OPERATION WILL BE COMPLETE." buttons {"Cancel", "Continue"} default button "Continue"	if button returned of result is "Cancel" then		return	end if		try		do shell script "hdiutil create -srcfolder " &amp; quoted form of sourcePath &amp; " -o " &amp; quoted form of tempDestinationDMG		do shell script "mv " &amp; quoted form of (tempDestinationDMG &amp; ".dmg") &amp; " " &amp; quoted form of destinationDMG		display dialog "DMG created successfully." buttons {"OK"} default button "OK"	on error errorMessage		display dialog "An error occurred: " &amp; errorMessage buttons {"OK"} default button "OK"	end tryend CreateDMGFromContent-- 5. Extract (ISO/DMG) to folderon ExtractISOToFolder()	try		set fileTypeList to {"ISO", "DMG"}		set fileTypeChoice to choose from list fileTypeList with prompt "Select the file type to extract:" default items {"ISO"} cancel button name "Cancel"				if fileTypeChoice is false then			return		end if				set fileTypeChoice to item 1 of fileTypeChoice		if fileTypeChoice is "ISO" then			set sourceISO to POSIX path of (choose file with prompt "Select an ISO file to extract:" of type {"iso"})		else			set sourceISO to POSIX path of (choose file with prompt "Select a DMG file to extract:" of type {"dmg"})		end if				set destinationFolder to POSIX path of (choose folder with prompt "Choose a destination folder:")				display alert dialogTitle message "The operation is starting. This process may take a while. Please be patient and wait for the finished message. NOTE: ONCE THE TEMPORARY FILE CHANGES ITS NAME TO THE FINAL CHOSEN NAME, THE OPERATION WILL BE COMPLETE." buttons {"Cancel", "Continue"} default button "Continue"				if button returned of result is "Cancel" then return				-- Mount the ISO/DMG to a temporary folder in /tmp/		set mountPoint to "/tmp/iso_dmg_mount/"		do shell script "mkdir -p " &amp; mountPoint		do shell script "hdiutil attach " &amp; quoted form of sourceISO &amp; " -mountpoint " &amp; quoted form of mountPoint &amp; " -nobrowse"				-- Copy contents to the destination folder		do shell script "cp -R " &amp; quoted form of mountPoint &amp; " " &amp; quoted form of destinationFolder				-- Detach the ISO/DMG and remove temporary folder		do shell script "hdiutil detach " &amp; quoted form of mountPoint		do shell script "rm -r " &amp; quoted form of mountPoint				display dialog "ISO/DMG extracted successfully to the chosen folder." buttons {"OK"} default button "OK"			on error errorMessage number errorNumber		if errorNumber is not -128 then			display dialog "Error: " &amp; errorMessage &amp; " (" &amp; errorNumber &amp; ")"		end if	end tryend ExtractISOToFolderon EditISOorDMG()		display dialog "To edit an ISO or DMG file, please follow these steps:1. **Extract the ISO/DMG**: Use the 'Extract ISO/DMG' option to extract the contents of your ISO or DMG file to a temporary folder.2. **Modify the Contents**: Open the temporary folder and add or remove files and folders as needed. You can copy files from other locations on your computer to this folder, or delete files within this folder.3. **Create a New ISO/DMG**: Once you have made all the desired changes in the temporary folder, use the 'Create ISO from Folder' or 'Create DMG from Folder' option to create a new ISO or DMG file with the modified contents. Choose the temporary folder as the source folder when prompted.4. **Clean Up**: After creating the new ISO/DMG, you can delete the temporary folder to clean up your workspace.Note: Remember to back up any important data before modifying ISO or DMG files.Would you like to proceed with these steps?" with title "Guidelines for Editing ISO/DMG Files" buttons {"Cancel", "Proceed"} default button "Proceed"		end EditISOorDMG</string>
+				</dict>
+				<key>BundleIdentifier</key>
+				<string>com.apple.Automator.RunScript</string>
+				<key>CFBundleVersion</key>
+				<string>1.0.2</string>
+				<key>CanShowSelectedItemsWhenRun</key>
+				<false/>
+				<key>CanShowWhenRun</key>
+				<true/>
+				<key>Category</key>
+				<array>
+					<string>AMCategoryUtilities</string>
+				</array>
+				<key>Class Name</key>
+				<string>RunScriptAction</string>
+				<key>InputUUID</key>
+				<string>1ED25A5C-D2CC-4BAD-8DEE-77BB8D98A049</string>
+				<key>Keywords</key>
+				<array>
+					<string>Run</string>
+				</array>
+				<key>OutputUUID</key>
+				<string>A24F8ABE-4D89-4345-8D08-77E3FEC08C50</string>
+				<key>UUID</key>
+				<string>539BA9FE-6BB2-4879-915A-205EC574D6DF</string>
+				<key>UnlocalizedApplications</key>
+				<array>
+					<string>Automator</string>
+				</array>
+				<key>arguments</key>
+				<dict>
+					<key>0</key>
+					<dict>
+						<key>default value</key>
+						<string>on run {input, parameters}
+	
+	(* Your script goes here *)
+	
+	return input
+end run</string>
+						<key>name</key>
+						<string>source</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>0</string>
+					</dict>
+				</dict>
+				<key>isViewVisible</key>
+				<integer>1</integer>
+				<key>location</key>
+				<string>536.500000:704.000000</string>
+				<key>nibPath</key>
+				<string>/System/Library/Automator/Run AppleScript.action/Contents/Resources/Base.lproj/main.nib</string>
+			</dict>
+			<key>isViewVisible</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>connectors</key>
+	<dict/>
+	<key>workflowMetaData</key>
+	<dict>
+		<key>workflowTypeIdentifier</key>
+		<string>com.apple.Automator.application</string>
+	</dict>
+</dict>
+</plist>
